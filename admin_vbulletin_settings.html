@@ -1,300 +1,297 @@
-
-<div class="alert alert-info alert-dismissible fixed-top m-3 p-0 text-center small  d-none" id="pageErrors">
-    <span>...</span>
-    <button type="button" class="close py-0" data-dismiss="alert" aria-label="Close">
-        <span aria-hidden="true" class="small" style="cursor:pointer">&times;</span>
-    </button>
-</div>
-
-<!-- Breadcrumbs -->
-<ol class="breadcrumb">
-    <li class="breadcrumb-item"><a href="./">{lang.R_CPINDEX}</a></li>
-    <li class="breadcrumb-item"><a href="{action}">{olang.R_VBULLETIN_SETTINGS}</a></li>
-</ol>
-
-<script>
-function loadWhenjQueryIsReady() {
-    setTimeout(function() {
-        if (typeof jQuery == 'undefined' && typeof window.jQuery == 'undefined') {
-            loadWhenjQueryIsReady();
-        } else {
-            $(document.body).on('change',"#vbulletin_intr_enabled",function (e) {
-                if($('#vbulletin_intr_enabled option:selected').val() == 0) {
-                     $('#updateBtn').prop('disabled', false);
-                }
-            });
-
-            $('#vbulletinform').on('keyup change paste', 'input, select:not(#vbulletin_intr_enabled), textarea', function(){
-                if($('#vbulletin_intr_enabled option:selected').val() == 1) {
-                    $('#vbulletin_intr_enabled').val(0);
-                    $('#vbulletin_intr_enabled_help').html('{olang.VBULLETIN_INTR_TEST_NOTE}');
-                    updateSettings(false);
-                    $('#updateBtn').prop('disabled', true);
-                    $('#vbulletin_intr_enabled').prop('disabled', true);
-                }
-            });
-        }
-    }, 500);
-}
-loadWhenjQueryIsReady();
-
-var testingInProcess = false;
-
-function testSetting() {
-   if(testingInProcess) {
-        // alert('{lang.WAIT}');
-        return;
-    }
-
-    testingInProcess = true;
-
-	$.ajax({
-		url: '{action}&case=test&{H_FORM_KEYS_GET}&_ajax_=1',
-        dataType: 'json',
-		cache: false})
-		.done(function (data) {
-            testingInProcess = false;
-
-			if(data.content){
-                if(data.content == 'done') {
-                    $('#vbulletin_intr_enabled_help').html('<span class="text-success">{olang.VBULLETIN_INTR_TEST_NOTE_SUCCESS}</span>');
-                    $('#updateBtn').prop('disabled', false);
-                    $('#vbulletin_intr_enabled').prop('disabled', false);
-                } else {
-                    $('#vbulletin_intr_enabled_help').html('<span class="text-danger">{olang.VBULLETIN_INTR_TEST_NOTE_ERR}</span>');
-                }
-			} else {
-				this.fail();
-			}
-		})
-		.fail(function(data) {
-            testingInProcess = false;
-            $('#vbulletin_intr_enabled_help').html('<span class="text-danger">{lang.ERROR_TRY_AGAIN}</span>');
-        });
-
-        return false;
-}
-
-
-var updatingInProcess = false;
-function updateSettings(showMessages, test) {
-    if(updatingInProcess) {
-        // alert('{lang.WAIT}');
-        return;
-    }
-
-    updatingInProcess = true;
-    $('#vbulletinform').css('opacity', '0.4').css('pointer-events', 'none');
-    $('#updateBtn').prop('disabled', true);
-
-    var forceParam = showMessages ? 'force=1&' : '';
-
-	$.ajax({
-        type: 'POST',
-		url: '{action}&case=update&' + forceParam +'_ajax_=1',
-        dataType: 'json',
-        data: $('#vbulletinform').serialize(),
-		cache: false})
-		.done(function (data) {
-             updatingInProcess = false;
-			if(data.content){
-                $('#vbulletinform').css('opacity', '1').css('pointer-events', 'auto');
-
-                if(data.content == 'done') {
-                    if(showMessages) {
-                        $('#pageErrors>span').html('{lang.CONFIGS_UPDATED}');
-                        $('#pageErrors').removeClass('d-none alert-danger').addClass('alert-info').fadeOut(4000);
-                    }
-                    if(test) {
-                        testSetting();
-                    }
-                } else {
-                    this.fail();
-                }
-			} else {
-				this.fail();
-			}
-		})
-		.fail(function(data) {
-            updatingInProcess = false;
-            $('#vbulletinform').css('opacity', '1').css('pointer-events', 'auto');
-            if(showMessages) {
-                var tryAgainMsg = '{lang.ERROR_TRY_AGAIN}';
-                <IGNORE>$('#pageErrors>span').html((data.content ? data.content : (data.responseJSON ? data.responseJSON.content  : tryAgainMsg)));</IGNORE>
-                $('#pageErrors').removeClass('d-none alert-info').addClass('alert-danger').fadeOut(4000);
-            }
-        });
-
-        return false;
-}
-
-function switchTab(tab, item) {
-    $('.settingstab').addClass('d-none');
-    $('#' + tab).removeClass('d-none');
-    $('#alltabs .nav-link').removeClass('active');
-    $(item).addClass('active');
-
-}
-</script>
-
-<div class="d-flex justify-content-end my-3">
-    <button type="button" class="btn btn-outline-secondary mx-1" onclick="updateSettings(false, true)">{olang.VBULLETIN_INTR_TEST}</button>
-    <button type="button" class="btn btn-primary mx-1" id="updateBtn" disabled onclick="updateSettings(true);">{lang.UPDATE}</button>
-</div>
-
-<form id="vbulletinform">
-<div class="card bg-light" id="homepageSetting">
-    <div class="card-header">{lang.CONFIG_KLJ_MENUS_GENERAL}</div>
-    <div class="card-body">
-
-    <!-- vbulletin_intr_enabled -->
-    <div class="form-group row">
-        <label for="vbulletin_intr_enabled" class="col-sm-2 col-form-label">{olang.VBULLETIN_INTR_ENABLE}</label>
-        <div class="col-sm-10">
-            <select id="vbulletin_intr_enabled" name="vbulletin_intr_enabled" class="form-control" (config.vbulletin_intr_enabled==0?disabled:)>
-                <option value="0" (config.vbulletin_intr_enabled==0?selected:)>{lang.NO}</option>
-                <option value="1" (config.vbulletin_intr_enabled==1?selected:)>{lang.YES}</option>
-            </select>
-                <small id="vbulletin_intr_enabled_help" class="form-text text-muted"><IF NAME="config.vbulletin_intr_enabled==0">{olang.VBULLETIN_INTR_TEST_NOTE}</IF></small>
-        </div>
+<div class="kj-page-header">
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="./">{lang.R_CPINDEX}</a></li>
+                <IF NAME="vb_tab_test">
+                <li class="breadcrumb-item"><a href="{action}">{olang.R_VBULLETIN_SETTINGS}</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{olang.VBULLETIN_INTR_TAB_TEST}</li>
+                <ELSE>
+                <li class="breadcrumb-item active" aria-current="page">{olang.R_VBULLETIN_SETTINGS}</li>
+                </IF>
+            </ol>
+        </nav>
+        <h1 class="kj-page-title">{olang.R_VBULLETIN_SETTINGS}</h1>
     </div>
-
-    <!-- vbulletin_intr_type -->
-    <div class="form-group row">
-        <label for="vbulletin_intr_type" class="col-sm-2 col-form-label">{olang.VBULLETIN_INTR_TYPE}</label>
-        <div class="col-sm-10">
-            <select id="vbulletin_intr_type" name="vbulletin_intr_type" class="form-control">
-                <option value="path" (config.vbulletin_intr_type==path?selected:)>{olang.VBULLETIN_INTR_TYPE_PATH}</option>
-                <option value="db" (config.vbulletin_intr_type==db?selected:)>{olang.VBULLETIN_INTR_TYPE_DB}</option>
-            </select>
-        </div>
-    </div>
-
-    <!-- vbulletin_intr_version5 -->
-    <div class="form-group row">
-        <label for="vbulletin_intr_version5" class="col-sm-2 col-form-label">{olang.VBULLETIN_INTR_VERSION5}</label>
-        <div class="col-sm-10">
-            <select id="vbulletin_intr_version5" name="vbulletin_intr_version5" class="form-control">
-                <option value="1" (config.vbulletin_intr_version5==1?selected:)>{lang.YES}</option>
-                <option value="0" (config.vbulletin_intr_version5==0?selected:)>{lang.NO}</option>
-            </select>
-        </div>
-    </div>
-
-    <!-- vbulletin_intr_encoding -->
-    <div class="form-group row">
-        <label for="vbulletin_intr_encoding" class="col-sm-2 col-form-label">{olang.VBULLETIN_INTR_ENCODING}</label>
-        <div class="col-sm-10">
-            <input type="text" class="form-control" name="vbulletin_intr_encoding" id="vbulletin_intr_encoding"
-                value="{config.vbulletin_intr_encoding}">
-        </div>
-    </div>
-
-    <!-- vbulletin_intr_link -->
-    <div class="form-group row">
-        <label for="vbulletin_intr_link" class="col-sm-2 col-form-label">{olang.VBULLETIN_INTR_LINK}</label>
-        <div class="col-sm-10">
-            <input type="text" class="form-control" name="vbulletin_intr_link" id="vbulletin_intr_link"
-                value="{config.vbulletin_intr_link}">
-        </div>
-    </div>
-
+    <div class="kj-page-actions">
+        <IF NAME="vb_on">
+        <form method="post" action="{action}">
+            <input type="hidden" name="vb_action" value="disable">
+            {H_FORM_KEYS}
+            <button type="submit" class="btn btn-outline-danger btn-sm" data-kj-confirm="{olang.VBULLETIN_INTR_TURN_OFF_CONFIRM}">
+                <i class="fa-solid fa-power-off" aria-hidden="true"></i><span>{olang.VBULLETIN_INTR_TURN_OFF}</span>
+            </button>
+        </form>
+        <ELSE>
+        <!-- the test runs first, its steps are shown when it fails -->
+        <form method="post" action="{vb_test_url}">
+            <input type="hidden" name="vb_action" value="enable">
+            {H_FORM_KEYS}
+            <button type="submit" class="btn btn-primary btn-sm">
+                <i class="fa-solid fa-plug-circle-check" aria-hidden="true"></i><span>{olang.VBULLETIN_INTR_TURN_ON}</span>
+            </button>
+        </form>
+        </IF>
     </div>
 </div>
 
-<div class="card text-center mt-4" id="alltabs">
+<IF NAME="vb_paused">
+<div class="alert alert-warning d-flex align-items-start gap-2" role="status">
+    <i class="fa-solid fa-circle-pause kj-alert-icon" aria-hidden="true"></i>
+    <div>{olang.VBULLETIN_INTR_STATUS_PAUSED}</div>
+</div>
+<ELSEIF NAME="vb_on">
+<div class="alert alert-success d-flex align-items-start gap-2" role="status">
+    <i class="fa-solid fa-circle-check kj-alert-icon" aria-hidden="true"></i>
+    <div>{olang.VBULLETIN_INTR_STATUS_ON}</div>
+</div>
+<ELSE>
+<div class="alert alert-info d-flex align-items-start gap-2" role="status">
+    <i class="fa-solid fa-circle-info kj-alert-icon" aria-hidden="true"></i>
+    <div>
+        <div>{olang.VBULLETIN_INTR_STATUS_OFF}</div>
+        <div class="small mt-1">{olang.VBULLETIN_INTR_STATUS_OFF_NOTE}</div>
+    </div>
+</div>
+</IF>
+
+<!-- the settings and the connection test are the tabs of the card -->
+<div class="card">
     <div class="card-header">
         <ul class="nav nav-tabs card-header-tabs">
             <li class="nav-item">
-                <a class="nav-link(config.vbulletin_intr_type==path? active:)" href="javascript:void(0)" onclick="switchTab('pathTab', this)">{olang.VBULLETIN_INTR_TYPE_PATH}</a>
+                <a class="nav-link<UNLESS NAME="vb_tab_test"> active</UNLESS>" href="{action}"<UNLESS NAME="vb_tab_test"> aria-current="page"</UNLESS>>
+                    <i class="fa-solid fa-sliders me-1" aria-hidden="true"></i>{olang.VBULLETIN_INTR_TAB_SETTINGS}
+                </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link(config.vbulletin_intr_type==db? active:)" href="javascript:void(0)" onclick="switchTab('dbTab', this)">{olang.VBULLETIN_INTR_TYPE_DB}</a>
+                <a class="nav-link<IF NAME="vb_tab_test"> active</IF>" href="{vb_test_url}"<IF NAME="vb_tab_test"> aria-current="page"</IF>>
+                    <i class="fa-solid fa-stethoscope me-1" aria-hidden="true"></i>{olang.VBULLETIN_INTR_TAB_TEST}
+                </a>
             </li>
         </ul>
     </div>
-    <!-- path tab -->
-    <div class="card-body settingstab(config.vbulletin_intr_type!=path? d-none:)" id="pathTab">
 
-    <!-- vbulletin_intr_path -->
-    <div class="form-group row">
-        <label for="vbulletin_intr_path" class="col-sm-2 col-form-label">{olang.VBULLETIN_INTR_PATH}</label>
-        <div class="col-sm-10">
-            <input type="text" class="form-control" name="vbulletin_intr_path" id="vbulletin_intr_path"
-                value="{config.vbulletin_intr_path}">
+<IF NAME="vb_tab_test">
+
+    <div class="card-body">
+
+        <IF NAME="vb_alert">
+        <div class="alert alert-{vb_alert_type} d-flex align-items-start gap-2" role="alert">
+            <i class="fa-solid fa-triangle-exclamation kj-alert-icon" aria-hidden="true"></i>
+            <div>{vb_alert}</div>
         </div>
-    </div>
+        </IF>
 
-    <!-- vbulletin_intr_config_path -->
-    <div class="form-group row">
-        <label for="vbulletin_intr_config_path" class="col-sm-2 col-form-label">{olang.VBULLETIN_INTR_CONFIG_PATH}</label>
-        <div class="col-sm-10">
-            <input type="text" class="form-control" name="vbulletin_intr_config_path" id="vbulletin_intr_config_path" value="{config.vbulletin_intr_config_path}">
+        <p class="text-body-secondary">{olang.VBULLETIN_INTR_TEST_INTRO}</p>
+
+        <form method="post" action="{vb_test_url}">
+            <input type="hidden" name="vb_action" value="test">
+            {H_FORM_KEYS}
+            <button type="submit" class="btn btn-primary">
+                <i class="fa-solid fa-play" aria-hidden="true"></i><span>{olang.VBULLETIN_INTR_TEST_RUN}</span>
+            </button>
+        </form>
+
+        <IF NAME="vb_test_steps">
+        <h2 class="kj-section-title">{olang.VBULLETIN_INTR_TEST_RESULTS}</h2>
+
+        <UNLESS NAME="vb_alert">
+        <div class="alert alert-<IF NAME="vb_test_passed">success<ELSE>danger</IF> d-flex align-items-start gap-2" role="status">
+            <i class="fa-solid <IF NAME="vb_test_passed">fa-circle-check<ELSE>fa-circle-xmark</IF> kj-alert-icon" aria-hidden="true"></i>
+            <div>{vb_test_summary}</div>
         </div>
-    </div>
+        </UNLESS>
+
+        <!-- each step says what it found, and how to fix it -->
+        <ul class="list-group">
+            <LOOP NAME="vb_test_steps">
+            <li class="list-group-item d-flex align-items-start gap-3 py-3">
+                <i class="fa-solid fa-{{icon}} text-{{color}} fs-5 flex-shrink-0 mt-1" aria-hidden="true"></i>
+                <div class="flex-grow-1" style="min-width: 0">
+                    <div class="fw-semibold">{{title}}</div>
+                    <div class="small text-break">{{detail}}</div>
+                    <IF LOOP="hint">
+                    <div class="small text-body-secondary text-break mt-2 ps-2 border-start border-3 border-{{color}}">
+                        <i class="fa-regular fa-lightbulb me-1" aria-hidden="true"></i>{{hint}}
+                    </div>
+                    </IF>
+                </div>
+            </li>
+            </LOOP>
+        </ul>
+        </IF>
 
     </div>
 
-    <!-- db tab -->
-    <div class="card-body settingstab (config.vbulletin_intr_type!=db? d-none:)" id="dbTab">
+<ELSE>
 
-    <!-- vbulletin_intr_db_server -->
-    <div class="form-group row">
-        <label for="vbulletin_intr_db_server" class="col-sm-2 col-form-label">{olang.VBULLETIN_INTR_DB_SERVER}</label>
-        <div class="col-sm-10">
-            <input type="text" class="form-control" name="vbulletin_intr_db_server" id="vbulletin_intr_db_server"
-                value="{config.vbulletin_intr_db_server}">
+    <form method="post" action="{action}" autocomplete="off">
+        <div class="card-body">
+
+            <IF NAME="vb_error_list">
+            <div class="alert alert-danger d-flex align-items-start gap-2" role="alert">
+                <i class="fa-solid fa-circle-xmark kj-alert-icon" aria-hidden="true"></i>
+                <div>
+                    <div class="fw-semibold">{olang.VBULLETIN_INTR_ERR_TITLE}</div>
+                    <ul class="mb-0 mt-1 ps-3">
+                        <LOOP NAME="vb_error_list"><li>{{text}}</li></LOOP>
+                    </ul>
+                </div>
+            </div>
+            </IF>
+
+            <!-- new connection details that were refused while the integration is on, with what the test found -->
+            <IF NAME="vb_alert">
+            <div class="alert alert-{vb_alert_type} d-flex align-items-start gap-2" role="alert">
+                <i class="fa-solid fa-triangle-exclamation kj-alert-icon" aria-hidden="true"></i>
+                <div>{vb_alert}</div>
+            </div>
+
+            <IF NAME="vb_test_steps">
+            <ul class="list-group mb-4">
+                <LOOP NAME="vb_test_steps">
+                <li class="list-group-item d-flex align-items-start gap-3 py-3">
+                    <i class="fa-solid fa-{{icon}} text-{{color}} fs-5 flex-shrink-0 mt-1" aria-hidden="true"></i>
+                    <div class="flex-grow-1" style="min-width: 0">
+                        <div class="fw-semibold">{{title}}</div>
+                        <div class="small text-break">{{detail}}</div>
+                        <IF LOOP="hint">
+                        <div class="small text-body-secondary text-break mt-2 ps-2 border-start border-3 border-{{color}}">
+                            <i class="fa-regular fa-lightbulb me-1" aria-hidden="true"></i>{{hint}}
+                        </div>
+                        </IF>
+                    </div>
+                </li>
+                </LOOP>
+            </ul>
+            </IF>
+            </IF>
+
+            <!-- the forum -->
+            <h2 class="kj-section-title mt-0">{olang.VBULLETIN_INTR_SECTION_FORUM}</h2>
+
+            <div class="kj-options">
+                <div class="form-group">
+                    <label for="vbulletin_intr_link">{olang.VBULLETIN_INTR_LINK}<small>{olang.VBULLETIN_INTR_LINK_HELP}</small></label>
+                    <div class="box">
+                        <input type="url" class="form-control" id="vbulletin_intr_link" name="vbulletin_intr_link" value="{vb_form.vbulletin_intr_link}" dir="ltr" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <span class="kj-label" id="vb_version_label">{olang.VBULLETIN_INTR_VERSION}<small>{olang.VBULLETIN_INTR_VERSION_HELP}</small></span>
+                    <div class="box" role="radiogroup" aria-labelledby="vb_version_label">
+                        <label class="form-check-label"><input type="radio" name="vbulletin_intr_version5" value="1"<IF NAME="vb_v5"> checked</IF>>{olang.VBULLETIN_INTR_VERSION_5}</label>
+                        <label class="form-check-label"><input type="radio" name="vbulletin_intr_version5" value="0"<UNLESS NAME="vb_v5"> checked</UNLESS>>{olang.VBULLETIN_INTR_VERSION_4}</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- the database of the forum -->
+            <h2 class="kj-section-title">{olang.VBULLETIN_INTR_SECTION_DB}</h2>
+
+            <div class="kj-options">
+                <div class="form-group">
+                    <span class="kj-label" id="vb_type_label">{olang.VBULLETIN_INTR_TYPE}<small>{olang.VBULLETIN_INTR_TYPE_HELP}</small></span>
+                    <div class="box" role="radiogroup" aria-labelledby="vb_type_label">
+                        <label class="form-check-label"><input type="radio" name="vbulletin_intr_type" value="path"<UNLESS NAME="vb_type_db"> checked</UNLESS>>{olang.VBULLETIN_INTR_TYPE_PATH}</label>
+                        <label class="form-check-label"><input type="radio" name="vbulletin_intr_type" value="db"<IF NAME="vb_type_db"> checked</IF>>{olang.VBULLETIN_INTR_TYPE_DB}</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- the fields of the other way stay in the form, hidden, the script below switches them -->
+            <div class="kj-options border-top" data-vb-type="path"<IF NAME="vb_type_db"> hidden</IF>>
+                <div class="form-group">
+                    <label for="vbulletin_intr_path">{olang.VBULLETIN_INTR_PATH}<small>{olang.VBULLETIN_INTR_PATH_HELP}</small></label>
+                    <div class="box">
+                        <input type="text" class="form-control" id="vbulletin_intr_path" name="vbulletin_intr_path" value="{vb_form.vbulletin_intr_path}" dir="ltr">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="vbulletin_intr_config_path">{olang.VBULLETIN_INTR_CONFIG_PATH}<small>{olang.VBULLETIN_INTR_CONFIG_PATH_HELP}</small></label>
+                    <div class="box">
+                        <input type="text" class="form-control" id="vbulletin_intr_config_path" name="vbulletin_intr_config_path" value="{vb_form.vbulletin_intr_config_path}" dir="ltr">
+                    </div>
+                </div>
+            </div>
+
+            <div class="kj-options border-top" data-vb-type="db"<UNLESS NAME="vb_type_db"> hidden</UNLESS>>
+                <div class="form-group">
+                    <label for="vbulletin_intr_db_server">{olang.VBULLETIN_INTR_DB_SERVER}<small>{olang.VBULLETIN_INTR_DB_SERVER_HELP}</small></label>
+                    <div class="box">
+                        <input type="text" class="form-control" id="vbulletin_intr_db_server" name="vbulletin_intr_db_server" value="{vb_form.vbulletin_intr_db_server}" dir="ltr">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="vbulletin_intr_db_port">{olang.VBULLETIN_INTR_DB_PORT}</label>
+                    <div class="box">
+                        <input type="number" class="form-control" id="vbulletin_intr_db_port" name="vbulletin_intr_db_port" value="{vb_form.vbulletin_intr_db_port}" min="1" max="65535" dir="ltr">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="vbulletin_intr_db_name">{olang.VBULLETIN_INTR_DB_NAME}</label>
+                    <div class="box">
+                        <input type="text" class="form-control" id="vbulletin_intr_db_name" name="vbulletin_intr_db_name" value="{vb_form.vbulletin_intr_db_name}" dir="ltr">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="vbulletin_intr_db_user">{olang.VBULLETIN_INTR_DB_USER}</label>
+                    <div class="box">
+                        <input type="text" class="form-control" id="vbulletin_intr_db_user" name="vbulletin_intr_db_user" value="{vb_form.vbulletin_intr_db_user}" autocomplete="off" dir="ltr">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="vbulletin_intr_db_password">{olang.VBULLETIN_INTR_DB_PASSWORD}<IF NAME="vb_has_password"><small>{olang.VBULLETIN_INTR_DB_PASSWORD_HELP}</small></IF></label>
+                    <div class="box">
+                        <input type="password" class="form-control" id="vbulletin_intr_db_password" name="vbulletin_intr_db_password" value="" autocomplete="new-password" dir="ltr"<IF NAME="vb_has_password"> placeholder="••••••••"</IF>>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="vbulletin_intr_db_prefix">{olang.VBULLETIN_INTR_DB_PREFIX}<small>{olang.VBULLETIN_INTR_DB_PREFIX_HELP}</small></label>
+                    <div class="box">
+                        <input type="text" class="form-control" id="vbulletin_intr_db_prefix" name="vbulletin_intr_db_prefix" value="{vb_form.vbulletin_intr_db_prefix}" dir="ltr">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="vbulletin_intr_encoding">{olang.VBULLETIN_INTR_ENCODING}<small>{olang.VBULLETIN_INTR_ENCODING_HELP}</small></label>
+                    <div class="box">
+                        <input type="text" class="form-control" id="vbulletin_intr_encoding" name="vbulletin_intr_encoding" value="{vb_form.vbulletin_intr_encoding}" dir="ltr">
+                    </div>
+                </div>
+            </div>
+
         </div>
-    </div>
 
-    <!-- vbulletin_intr_db_port -->
-    <div class="form-group row">
-        <label for="vbulletin_intr_db_port" class="col-sm-2 col-form-label">{olang.VBULLETIN_INTR_DB_PORT}</label>
-        <div class="col-sm-10">
-            <input type="text" class="form-control" name="vbulletin_intr_db_port" id="vbulletin_intr_db_port"
-                value="{config.vbulletin_intr_db_port}">
+        <div class="card-footer kj-form-actions">
+            <input type="hidden" name="vb_action" value="save">
+            <button type="submit" class="btn btn-primary">
+                <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i><span>{olang.VBULLETIN_INTR_SAVE}</span>
+            </button>
         </div>
-    </div>
 
-    <!-- vbulletin_intr_db_user -->
-    <div class="form-group row">
-        <label for="vbulletin_intr_db_user" class="col-sm-2 col-form-label">{olang.VBULLETIN_INTR_DB_USER}</label>
-        <div class="col-sm-10">
-            <input type="text" class="form-control" name="vbulletin_intr_db_user" id="vbulletin_intr_db_user"
-                value="{config.vbulletin_intr_db_user}">
-        </div>
-    </div>
+        {H_FORM_KEYS}
+    </form>
 
-    <!-- vbulletin_intr_db_password -->
-    <div class="form-group row">
-        <label for="vbulletin_intr_db_password" class="col-sm-2 col-form-label">{olang.VBULLETIN_INTR_DB_PASSWORD}</label>
-        <div class="col-sm-10">
-            <input type="text" class="form-control" name="vbulletin_intr_db_password" id="vbulletin_intr_db_password"
-                value="{config.vbulletin_intr_db_password}">
-        </div>
-    </div>
+    <script>
+        // the fields of the chosen way to read the connection details
+        document.querySelectorAll('input[name="vbulletin_intr_type"]').forEach(function (radio) {
+            radio.addEventListener('change', function () {
+                document.querySelectorAll('[data-vb-type]').forEach(function (fields) {
+                    fields.hidden = fields.dataset.vbType !== radio.value;
+                });
+            });
+        });
+    </script>
 
-    <!-- vbulletin_intr_db_name -->
-    <div class="form-group row">
-        <label for="vbulletin_intr_db_name" class="col-sm-2 col-form-label">{olang.VBULLETIN_INTR_DB_NAME}</label>
-        <div class="col-sm-10">
-            <input type="text" class="form-control" name="vbulletin_intr_db_name" id="vbulletin_intr_db_name"
-                value="{config.vbulletin_intr_db_name}">
-        </div>
-    </div>
+</IF>
 
-    <!-- vbulletin_intr_db_prefix -->
-    <div class="form-group row">
-        <label for="vbulletin_intr_db_prefix" class="col-sm-2 col-form-label">{olang.VBULLETIN_INTR_DB_PREFIX}</label>
-        <div class="col-sm-10">
-            <input type="text" class="form-control" name="vbulletin_intr_db_prefix" id="vbulletin_intr_db_prefix"
-                value="{config.vbulletin_intr_db_prefix}">
-        </div>
-    </div>
-
-    </div>
 </div>
-
-{H_FORM_KEYS}
-</form>
-
